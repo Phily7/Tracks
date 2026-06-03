@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 import '../../shared/theme/app_colors.dart';
+import '../../core/sync/sync_provider.dart';
 //import 'package:dropdown_search/dropdown_search.dart';
 
 class SaleEntryScreen extends ConsumerStatefulWidget {
@@ -17,6 +18,7 @@ class SaleEntryScreen extends ConsumerStatefulWidget {
 
 class _SaleEntryScreenState extends ConsumerState<SaleEntryScreen> {
   // ── Data ─────────────────────────────────────────────────────────────────
+
   List<ProductsTableData> _products = [];
   List<ClientsTableData> _clients = [];
   ShiftsTableData? _shift;
@@ -40,6 +42,13 @@ class _SaleEntryScreenState extends ConsumerState<SaleEntryScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(syncServiceProvider)
+          .syncAll(); // Trigger a sync on screen load to ensure we have the latest data,
+      // especially for products and clients.
+      // We can remove this once we have background sync working reliably.
+    });
     _init();
   }
 

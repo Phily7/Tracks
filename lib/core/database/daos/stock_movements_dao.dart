@@ -9,9 +9,9 @@ class StockMovementsDao extends DatabaseAccessor<AppDatabase>
   StockMovementsDao(super.db);
 
   Future<List<StockMovementsTableData>> getMovementsByShift(String shiftId) =>
-      (select(stockMovementsTable)
-            ..where((s) => s.shiftId.equals(shiftId)))
-          .get();
+      (select(
+        stockMovementsTable,
+      )..where((s) => s.shiftId.equals(shiftId))).get();
 
   Future<void> insertMovement(StockMovementsTableCompanion entry) =>
       into(stockMovementsTable).insert(entry);
@@ -20,11 +20,22 @@ class StockMovementsDao extends DatabaseAccessor<AppDatabase>
       update(stockMovementsTable).replace(entry);
 
   Future<StockMovementsTableData?> getMovement(
-      String shiftId, String productId) async {
-    final result = await (select(stockMovementsTable)
-          ..where((s) =>
-              s.shiftId.equals(shiftId) & s.productId.equals(productId)))
-        .get();
+    String shiftId,
+    String productId,
+  ) async {
+    final result =
+        await (select(stockMovementsTable)..where(
+              (s) => s.shiftId.equals(shiftId) & s.productId.equals(productId),
+            ))
+            .get();
     return result.isEmpty ? null : result.first;
   }
+
+  Future<List<StockMovementsTableData>> getUnsyncedMovements() =>
+      (select(stockMovementsTable)..where((m) => m.synced.equals(false))).get();
+
+  Future<void> markSynced(String id) =>
+      (update(stockMovementsTable)..where((m) => m.id.equals(id))).write(
+        const StockMovementsTableCompanion(synced: Value(true)),
+      );
 }

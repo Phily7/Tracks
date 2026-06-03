@@ -36,7 +36,7 @@ class $StaffTableTable extends StaffTable
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultValue: const Constant('barista'),
+    defaultValue: const Constant(''),
   );
   static const VerificationMeta _activeMeta = const VerificationMeta('active');
   @override
@@ -49,7 +49,7 @@ class $StaffTableTable extends StaffTable
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'CHECK ("active" IN (0, 1))',
     ),
-    defaultValue: const Constant(true),
+    defaultValue: const Constant(false),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -1308,6 +1308,31 @@ class $ShiftsTableTable extends ShiftsTable
     requiredDuringInsert: false,
     defaultValue: const Constant('open'),
   );
+  static const VerificationMeta _locationMeta = const VerificationMeta(
+    'location',
+  );
+  @override
+  late final GeneratedColumn<String> location = GeneratedColumn<String>(
+    'location',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _syncedMeta = const VerificationMeta('synced');
+  @override
+  late final GeneratedColumn<bool> synced = GeneratedColumn<bool>(
+    'synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1330,6 +1355,8 @@ class $ShiftsTableTable extends ShiftsTable
     closingCash,
     closingMomo,
     status,
+    location,
+    synced,
     createdAt,
   ];
   @override
@@ -1401,6 +1428,18 @@ class $ShiftsTableTable extends ShiftsTable
         status.isAcceptableOrUnknown(data['status']!, _statusMeta),
       );
     }
+    if (data.containsKey('location')) {
+      context.handle(
+        _locationMeta,
+        location.isAcceptableOrUnknown(data['location']!, _locationMeta),
+      );
+    }
+    if (data.containsKey('synced')) {
+      context.handle(
+        _syncedMeta,
+        synced.isAcceptableOrUnknown(data['synced']!, _syncedMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1448,6 +1487,14 @@ class $ShiftsTableTable extends ShiftsTable
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
+      location: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location'],
+      )!,
+      synced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}synced'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1470,6 +1517,8 @@ class ShiftsTableData extends DataClass implements Insertable<ShiftsTableData> {
   final int? closingCash;
   final int? closingMomo;
   final String status;
+  final String location;
+  final bool synced;
   final DateTime createdAt;
   const ShiftsTableData({
     required this.id,
@@ -1480,6 +1529,8 @@ class ShiftsTableData extends DataClass implements Insertable<ShiftsTableData> {
     this.closingCash,
     this.closingMomo,
     required this.status,
+    required this.location,
+    required this.synced,
     required this.createdAt,
   });
   @override
@@ -1499,6 +1550,8 @@ class ShiftsTableData extends DataClass implements Insertable<ShiftsTableData> {
       map['closing_momo'] = Variable<int>(closingMomo);
     }
     map['status'] = Variable<String>(status);
+    map['location'] = Variable<String>(location);
+    map['synced'] = Variable<bool>(synced);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -1519,6 +1572,8 @@ class ShiftsTableData extends DataClass implements Insertable<ShiftsTableData> {
           ? const Value.absent()
           : Value(closingMomo),
       status: Value(status),
+      location: Value(location),
+      synced: Value(synced),
       createdAt: Value(createdAt),
     );
   }
@@ -1537,6 +1592,8 @@ class ShiftsTableData extends DataClass implements Insertable<ShiftsTableData> {
       closingCash: serializer.fromJson<int?>(json['closingCash']),
       closingMomo: serializer.fromJson<int?>(json['closingMomo']),
       status: serializer.fromJson<String>(json['status']),
+      location: serializer.fromJson<String>(json['location']),
+      synced: serializer.fromJson<bool>(json['synced']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -1552,6 +1609,8 @@ class ShiftsTableData extends DataClass implements Insertable<ShiftsTableData> {
       'closingCash': serializer.toJson<int?>(closingCash),
       'closingMomo': serializer.toJson<int?>(closingMomo),
       'status': serializer.toJson<String>(status),
+      'location': serializer.toJson<String>(location),
+      'synced': serializer.toJson<bool>(synced),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -1565,6 +1624,8 @@ class ShiftsTableData extends DataClass implements Insertable<ShiftsTableData> {
     Value<int?> closingCash = const Value.absent(),
     Value<int?> closingMomo = const Value.absent(),
     String? status,
+    String? location,
+    bool? synced,
     DateTime? createdAt,
   }) => ShiftsTableData(
     id: id ?? this.id,
@@ -1575,6 +1636,8 @@ class ShiftsTableData extends DataClass implements Insertable<ShiftsTableData> {
     closingCash: closingCash.present ? closingCash.value : this.closingCash,
     closingMomo: closingMomo.present ? closingMomo.value : this.closingMomo,
     status: status ?? this.status,
+    location: location ?? this.location,
+    synced: synced ?? this.synced,
     createdAt: createdAt ?? this.createdAt,
   );
   ShiftsTableData copyWithCompanion(ShiftsTableCompanion data) {
@@ -1595,6 +1658,8 @@ class ShiftsTableData extends DataClass implements Insertable<ShiftsTableData> {
           ? data.closingMomo.value
           : this.closingMomo,
       status: data.status.present ? data.status.value : this.status,
+      location: data.location.present ? data.location.value : this.location,
+      synced: data.synced.present ? data.synced.value : this.synced,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -1610,6 +1675,8 @@ class ShiftsTableData extends DataClass implements Insertable<ShiftsTableData> {
           ..write('closingCash: $closingCash, ')
           ..write('closingMomo: $closingMomo, ')
           ..write('status: $status, ')
+          ..write('location: $location, ')
+          ..write('synced: $synced, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -1625,6 +1692,8 @@ class ShiftsTableData extends DataClass implements Insertable<ShiftsTableData> {
     closingCash,
     closingMomo,
     status,
+    location,
+    synced,
     createdAt,
   );
   @override
@@ -1639,6 +1708,8 @@ class ShiftsTableData extends DataClass implements Insertable<ShiftsTableData> {
           other.closingCash == this.closingCash &&
           other.closingMomo == this.closingMomo &&
           other.status == this.status &&
+          other.location == this.location &&
+          other.synced == this.synced &&
           other.createdAt == this.createdAt);
 }
 
@@ -1651,6 +1722,8 @@ class ShiftsTableCompanion extends UpdateCompanion<ShiftsTableData> {
   final Value<int?> closingCash;
   final Value<int?> closingMomo;
   final Value<String> status;
+  final Value<String> location;
+  final Value<bool> synced;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const ShiftsTableCompanion({
@@ -1662,6 +1735,8 @@ class ShiftsTableCompanion extends UpdateCompanion<ShiftsTableData> {
     this.closingCash = const Value.absent(),
     this.closingMomo = const Value.absent(),
     this.status = const Value.absent(),
+    this.location = const Value.absent(),
+    this.synced = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1674,6 +1749,8 @@ class ShiftsTableCompanion extends UpdateCompanion<ShiftsTableData> {
     this.closingCash = const Value.absent(),
     this.closingMomo = const Value.absent(),
     this.status = const Value.absent(),
+    this.location = const Value.absent(),
+    this.synced = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1686,6 +1763,8 @@ class ShiftsTableCompanion extends UpdateCompanion<ShiftsTableData> {
     Expression<int>? closingCash,
     Expression<int>? closingMomo,
     Expression<String>? status,
+    Expression<String>? location,
+    Expression<bool>? synced,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -1698,6 +1777,8 @@ class ShiftsTableCompanion extends UpdateCompanion<ShiftsTableData> {
       if (closingCash != null) 'closing_cash': closingCash,
       if (closingMomo != null) 'closing_momo': closingMomo,
       if (status != null) 'status': status,
+      if (location != null) 'location': location,
+      if (synced != null) 'synced': synced,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1712,6 +1793,8 @@ class ShiftsTableCompanion extends UpdateCompanion<ShiftsTableData> {
     Value<int?>? closingCash,
     Value<int?>? closingMomo,
     Value<String>? status,
+    Value<String>? location,
+    Value<bool>? synced,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -1724,6 +1807,8 @@ class ShiftsTableCompanion extends UpdateCompanion<ShiftsTableData> {
       closingCash: closingCash ?? this.closingCash,
       closingMomo: closingMomo ?? this.closingMomo,
       status: status ?? this.status,
+      location: location ?? this.location,
+      synced: synced ?? this.synced,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -1756,6 +1841,12 @@ class ShiftsTableCompanion extends UpdateCompanion<ShiftsTableData> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (location.present) {
+      map['location'] = Variable<String>(location.value);
+    }
+    if (synced.present) {
+      map['synced'] = Variable<bool>(synced.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1776,6 +1867,8 @@ class ShiftsTableCompanion extends UpdateCompanion<ShiftsTableData> {
           ..write('closingCash: $closingCash, ')
           ..write('closingMomo: $closingMomo, ')
           ..write('status: $status, ')
+          ..write('location: $location, ')
+          ..write('synced: $synced, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -4629,6 +4722,8 @@ typedef $$ShiftsTableTableCreateCompanionBuilder =
       Value<int?> closingCash,
       Value<int?> closingMomo,
       Value<String> status,
+      Value<String> location,
+      Value<bool> synced,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -4642,6 +4737,8 @@ typedef $$ShiftsTableTableUpdateCompanionBuilder =
       Value<int?> closingCash,
       Value<int?> closingMomo,
       Value<String> status,
+      Value<String> location,
+      Value<bool> synced,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -4786,6 +4883,16 @@ class $$ShiftsTableTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get location => $composableBuilder(
+    column: $table.location,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get synced => $composableBuilder(
+    column: $table.synced,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4937,6 +5044,16 @@ class $$ShiftsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get location => $composableBuilder(
+    column: $table.location,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get synced => $composableBuilder(
+    column: $table.synced,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -5003,6 +5120,12 @@ class $$ShiftsTableTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get location =>
+      $composableBuilder(column: $table.location, builder: (column) => column);
+
+  GeneratedColumn<bool> get synced =>
+      $composableBuilder(column: $table.synced, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -5149,6 +5272,8 @@ class $$ShiftsTableTableTableManager
                 Value<int?> closingCash = const Value.absent(),
                 Value<int?> closingMomo = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String> location = const Value.absent(),
+                Value<bool> synced = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ShiftsTableCompanion(
@@ -5160,6 +5285,8 @@ class $$ShiftsTableTableTableManager
                 closingCash: closingCash,
                 closingMomo: closingMomo,
                 status: status,
+                location: location,
+                synced: synced,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -5173,6 +5300,8 @@ class $$ShiftsTableTableTableManager
                 Value<int?> closingCash = const Value.absent(),
                 Value<int?> closingMomo = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String> location = const Value.absent(),
+                Value<bool> synced = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ShiftsTableCompanion.insert(
@@ -5184,6 +5313,8 @@ class $$ShiftsTableTableTableManager
                 closingCash: closingCash,
                 closingMomo: closingMomo,
                 status: status,
+                location: location,
+                synced: synced,
                 createdAt: createdAt,
                 rowid: rowid,
               ),

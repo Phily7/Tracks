@@ -17,7 +17,9 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
             ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
           .get();
 
-  Stream<List<TransactionsTableData>> watchTransactionsByShift(String shiftId) =>
+  Stream<List<TransactionsTableData>> watchTransactionsByShift(
+    String shiftId,
+  ) =>
       (select(transactionsTable)
             ..where((t) => t.shiftId.equals(shiftId))
             ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
@@ -25,4 +27,12 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
 
   Future<void> deleteTransaction(String id) =>
       (delete(transactionsTable)..where((t) => t.id.equals(id))).go();
+
+  Future<List<TransactionsTableData>> getUnsyncedTransactions() =>
+      (select(transactionsTable)..where((t) => t.synced.equals(false))).get();
+
+  Future<void> markSynced(String id) =>
+      (update(transactionsTable)..where((t) => t.id.equals(id))).write(
+        const TransactionsTableCompanion(synced: Value(true)),
+      );
 }

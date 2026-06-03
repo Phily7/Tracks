@@ -13,6 +13,9 @@ class ProductsDao extends DatabaseAccessor<AppDatabase> with _$ProductsDaoMixin 
   Stream<List<ProductsTableData>> watchActiveProducts() =>
       (select(productsTable)..where((p) => p.active.equals(true))).watch();
 
+  Stream<List<ProductsTableData>> watchAllProducts() =>
+      (select(productsTable)..orderBy([(p) => OrderingTerm.asc(p.name)])).watch();
+
   Future<void> insertProduct(ProductsTableCompanion entry) =>
       into(productsTable).insert(entry);
 

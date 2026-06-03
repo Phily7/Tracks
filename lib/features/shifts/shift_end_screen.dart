@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 import '../../shared/theme/app_colors.dart';
+import '../../core/sync/sync_provider.dart';
 
 class ShiftEndScreen extends ConsumerStatefulWidget {
   final String shiftId;
@@ -102,6 +103,9 @@ class _ShiftEndScreenState extends ConsumerState<ShiftEndScreen> {
         closingCash: _closingCashVal,
         closingMomo: _closingMomoVal,
       );
+      await ref
+          .read(syncServiceProvider)
+          .syncAll(); // try to sync immediately after closing shift
       if (mounted)
         setState(() {
           _closing = false;

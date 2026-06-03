@@ -13,6 +13,9 @@ class StaffDao extends DatabaseAccessor<AppDatabase> with _$StaffDaoMixin {
   Stream<List<StaffTableData>> watchActiveStaff() =>
       (select(staffTable)..where((s) => s.active.equals(true))).watch();
 
+  Stream<List<StaffTableData>> watchAllStaff() =>
+      (select(staffTable)..orderBy([(s) => OrderingTerm.asc(s.name)])).watch();
+
   Future<void> insertStaff(StaffTableCompanion entry) =>
       into(staffTable).insert(entry);
 

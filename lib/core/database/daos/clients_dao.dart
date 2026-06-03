@@ -13,6 +13,16 @@ class ClientsDao extends DatabaseAccessor<AppDatabase> with _$ClientsDaoMixin {
   Stream<List<ClientsTableData>> watchActiveClients() =>
       (select(clientsTable)..where((c) => c.active.equals(true))).watch();
 
+  Stream<List<ClientsTableData>> watchAllClients() =>
+      (select(clientsTable)..orderBy([(c) => OrderingTerm.asc(c.name)])).watch();
+
   Future<void> insertClient(ClientsTableCompanion entry) =>
       into(clientsTable).insert(entry);
+
+  Future<bool> updateClient(ClientsTableCompanion entry) =>
+      update(clientsTable).replace(entry);
+
+  Future<void> deactivateClient(String id) =>
+      (update(clientsTable)..where((c) => c.id.equals(id)))
+          .write(const ClientsTableCompanion(active: Value(false)));
 }

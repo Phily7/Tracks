@@ -57,6 +57,8 @@ class ShiftsTable extends Table {
   IntColumn get closingCash => integer().nullable()();
   IntColumn get closingMomo => integer().nullable()();
   TextColumn get status => text().withDefault(const Constant('open'))();
+  TextColumn get location => text().withDefault(const Constant(''))();
+  BoolColumn get synced => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
@@ -134,7 +136,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   static QueryExecutor _openConnection() {
     // if (kIsWeb) {
@@ -167,10 +169,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 2;
-
-  @override
-  MigrationStrategy get migration => MIgrationStrategy(
+  MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.addColumn(shiftsTable, shiftsTable.location);
@@ -178,7 +177,6 @@ class AppDatabase extends _$AppDatabase {
       }
     },
   );
-  static QueryExecutor _openConnection() {}
 }
 
 // UUID helper (no extra package needed)

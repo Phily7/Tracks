@@ -16,12 +16,14 @@ class ShiftsDao extends DatabaseAccessor<AppDatabase> with _$ShiftsDaoMixin {
     final today = DateTime.now();
     final startOfDay = DateTime(today.year, today.month, today.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
-    final result = await (select(shiftsTable)
-          ..where((s) =>
-              s.status.equals('open') &
-              s.date.isBiggerOrEqualValue(startOfDay) &
-              s.date.isSmallerThanValue(endOfDay)))
-        .get();
+    final result =
+        await (select(shiftsTable)..where(
+              (s) =>
+                  s.status.equals('open') &
+                  s.date.isBiggerOrEqualValue(startOfDay) &
+                  s.date.isSmallerThanValue(endOfDay),
+            ))
+            .get();
     return result.isEmpty ? null : result.first;
   }
 
@@ -29,24 +31,31 @@ class ShiftsDao extends DatabaseAccessor<AppDatabase> with _$ShiftsDaoMixin {
     required String shiftId,
     required int closingCash,
     required int closingMomo,
-  }) =>
-      (update(shiftsTable)..where((s) => s.id.equals(shiftId))).write(
-        ShiftsTableCompanion(
-          status: const Value('closed'),
-          closingCash: Value(closingCash),
-          closingMomo: Value(closingMomo),
-        ),
-      );
+  }) => (update(shiftsTable)..where((s) => s.id.equals(shiftId))).write(
+    ShiftsTableCompanion(
+      status: const Value('closed'),
+      closingCash: Value(closingCash),
+      closingMomo: Value(closingMomo),
+    ),
+  );
 
   Future<ShiftsTableData?> getShiftById(String id) async {
-    final result = await (select(shiftsTable)
-          ..where((s) => s.id.equals(id)))
-        .get();
+    final result = await (select(
+      shiftsTable,
+    )..where((s) => s.id.equals(id))).get();
     return result.isEmpty ? null : result.first;
   }
 
   Future<List<ShiftsTableData>> getAllShifts() =>
-      (select(shiftsTable)
-            ..orderBy([(s) => OrderingTerm.desc(s.date)]))
-          .get();
+      (select(shiftsTable)..orderBy([(s) => OrderingTerm.desc(s.date)])).get();
+
+  // This gets all the unsynced shifts
+  Future<List<ShiftsTableData>> getUnsyncedShifts() =>
+      (select(shiftsTable)..where((s) => s.synced.equals(false))).get();
+
+  // Mark a shift as synced
+  Future<void> markSynced(String id) =>
+      (update(shiftsTable)..where((s) => s.id.equals(id))).write(
+        const ShiftsTableCompanion(synced: Value(true)),
+      );
 }

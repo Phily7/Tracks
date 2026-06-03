@@ -36,67 +36,85 @@ class _ShiftStartScreenState extends ConsumerState<ShiftStartScreen> {
     super.dispose();
   }
 
+  Future<void> _loadStaff() async {
+    try {
+      final db = ref.read(databaseProvider);
+      var staff = await db.staffDao.getActiveStaff();
 
-Future<void> _loadStaff() async {
-  try {
-    final db = ref.read(databaseProvider);
-    var staff = await db.staffDao.getActiveStaff();
+      if (staff.isEmpty) {
+        try {
+          await _seedDefaultStaff(db);
+          staff = await db.staffDao.getActiveStaff();
+        } catch (_) {}
+      }
 
-    if (staff.isEmpty) {
-      try {
-        await _seedDefaultStaff(db);
-        staff = await db.staffDao.getActiveStaff();
-      } catch (_) {}
+      if (staff.isEmpty) {
+        setState(() {
+          _staffList = _hardcodedStaff();
+          _loading = false;
+        });
+        return;
+      }
+
+      setState(() {
+        _staffList = staff;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _staffList = _hardcodedStaff();
+        _loading = false;
+        _error = null;
+      });
     }
-
-    if (staff.isEmpty) {
-      setState(() { _staffList = _hardcodedStaff(); _loading = false; });
-      return;
-    }
-
-    setState(() { _staffList = staff; _loading = false; });
-  } catch (e) {
-    setState(() { _staffList = _hardcodedStaff(); _loading = false; _error = null; });
   }
-}
 
-Future<void> _seedDefaultStaff(AppDatabase db) async {
-  for (final name in ['Samantha', 'Magnifique']) {
-    await db.staffDao.insertStaff(
-      StaffTableCompanion.insert(
-        id: Value('staff-${name.toLowerCase()}'),
-        name: name,
+  Future<void> _seedDefaultStaff(AppDatabase db) async {
+    for (final name in ['Samantha', 'Magnifique', 'Chris']) {
+      await db.staffDao.insertStaff(
+        StaffTableCompanion.insert(
+          id: Value('staff-${name.toLowerCase()}'),
+          name: name,
+        ),
+      );
+    }
+  }
+
+  List<StaffTableData> _hardcodedStaff() {
+    return [
+      StaffTableData(
+        id: 'staff-samantha',
+        name: 'Samantha',
+        role: 'barista',
+        active: true,
+        createdAt: DateTime.now(),
       ),
-    );
+      StaffTableData(
+        id: 'staff-magnifique',
+        name: 'Magnifique',
+        role: 'barista',
+        active: true,
+        createdAt: DateTime.now(),
+      ),
+      StaffTableData(
+        id: 'staff-chris',
+        name: 'Chris',
+        role: 'barista',
+        active: true,
+        createdAt: DateTime.now(),
+      ),
+    ];
   }
-}
-
-List<StaffTableData> _hardcodedStaff() {
-  return [
-    StaffTableData(
-      id: 'staff-samantha',
-      name: 'Samantha',
-      role: 'barista',
-      active: true,
-      createdAt: DateTime.now(),
-    ),
-    StaffTableData(
-      id: 'staff-magnifique',
-      name: 'Magnifique',
-      role: 'barista',
-      active: true,
-      createdAt: DateTime.now(),
-    ),
-  ];
-}
-
 
   Future<void> _startShift() async {
     if (_selectedStaff == null) {
       setState(() => _error = 'Please select who is working today');
       return;
     }
-    setState(() { _saving = true; _error = null; });
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     try {
       final db = ref.read(databaseProvider);
       final existing = await db.shiftsDao.getOpenShift();
@@ -110,13 +128,17 @@ List<StaffTableData> _hardcodedStaff() {
         ShiftsTableCompanion.insert(
           id: Value(shiftId),
           staffId: Value(_selectedStaff!.id),
+          location: Value(_selectedStaff!.name.toLowerCase()),
           openingCash: Value(int.tryParse(_cashController.text) ?? 0),
           openingMomo: Value(int.tryParse(_momoController.text) ?? 0),
         ),
       );
       if (mounted) context.go('/shift/active', extra: shiftId);
     } catch (e) {
-      setState(() { _saving = false; _error = e.toString(); });
+      setState(() {
+        _saving = false;
+        _error = e.toString();
+      });
     }
   }
 
@@ -125,7 +147,9 @@ List<StaffTableData> _hardcodedStaff() {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Shift Already Open'),
-        content: const Text('There is already an open shift today. Resume it or close it first.'),
+        content: const Text(
+          'There is already an open shift today. Resume it or close it first.',
+        ),
         actions: [
           TextButton(
             onPressed: () {
@@ -156,29 +180,48 @@ List<StaffTableData> _hardcodedStaff() {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(children: [
-                    Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(
-                        color: AppColors.accent,
-                        borderRadius: BorderRadius.circular(10),
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.accent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.restaurant,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
-                      child: const Icon(Icons.restaurant, color: Colors.white, size: 22),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text('FabFoods',
-                        style: TextStyle(color: Colors.white, fontSize: 20,
-                            fontWeight: FontWeight.w700)),
-                  ]),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'FabFoods',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 32),
-                  const Text('Start Shift',
-                      style: TextStyle(color: Colors.white, fontSize: 28,
-                          fontWeight: FontWeight.w700)),
+                  const Text(
+                    'Start Shift',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     _formatDate(DateTime.now()),
                     style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6), fontSize: 15),
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 15,
+                    ),
                   ),
                 ],
               ),
@@ -199,25 +242,40 @@ List<StaffTableData> _hardcodedStaff() {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 8),
-                            const Text('Who is working today?',
-                                style: TextStyle(fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary)),
+                            const Text(
+                              'Who is working today?',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
                             const SizedBox(height: 12),
-                            ..._staffList.map((staff) => _StaffCard(
-                                  staff: staff,
-                                  selected: _selectedStaff?.id == staff.id,
-                                  onTap: () => setState(() => _selectedStaff = staff),
-                                )),
+                            ..._staffList.map(
+                              (staff) => _StaffCard(
+                                staff: staff,
+                                selected: _selectedStaff?.id == staff.id,
+                                onTap: () =>
+                                    setState(() => _selectedStaff = staff),
+                              ),
+                            ),
                             const SizedBox(height: 28),
-                            const Text('Opening Balances',
-                                style: TextStyle(fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary)),
+                            const Text(
+                              'Opening Balances',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
                             const SizedBox(height: 4),
-                            const Text('Count the cash and MoMo before starting.',
-                                style: TextStyle(fontSize: 13,
-                                    color: AppColors.textSecondary)),
+                            const Text(
+                              'Count the cash and MoMo before starting.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                             const SizedBox(height: 16),
                             _BalanceField(
                               label: 'Cash on Hand (RWF)',
@@ -240,14 +298,25 @@ List<StaffTableData> _hardcodedStaff() {
                                   color: AppColors.error.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: Row(children: [
-                                  const Icon(Icons.error_outline,
-                                      color: AppColors.error, size: 18),
-                                  const SizedBox(width: 8),
-                                  Expanded(child: Text(_error!,
-                                      style: const TextStyle(
-                                          color: AppColors.error, fontSize: 13))),
-                                ]),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.error_outline,
+                                      color: AppColors.error,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        _error!,
+                                        style: const TextStyle(
+                                          color: AppColors.error,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                             const SizedBox(height: 32),
@@ -257,9 +326,14 @@ List<StaffTableData> _hardcodedStaff() {
                               child: ElevatedButton(
                                 onPressed: _saving ? null : _startShift,
                                 child: _saving
-                                    ? const SizedBox(width: 20, height: 20,
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
                                         child: CircularProgressIndicator(
-                                            strokeWidth: 2, color: Colors.white))
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
                                     : const Text('Start Shift'),
                               ),
                             ),
@@ -276,9 +350,21 @@ List<StaffTableData> _hardcodedStaff() {
   }
 
   String _formatDate(DateTime d) {
-    const months = ['Jan','Feb','Mar','Apr','May','Jun',
-                    'Jul','Aug','Sep','Oct','Nov','Dec'];
-    const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return '${days[d.weekday - 1]}, ${d.day} ${months[d.month - 1]} ${d.year}';
   }
 }
@@ -289,7 +375,11 @@ class _StaffCard extends StatelessWidget {
   final StaffTableData staff;
   final bool selected;
   final VoidCallback onTap;
-  const _StaffCard({required this.staff, required this.selected, required this.onTap});
+  const _StaffCard({
+    required this.staff,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -309,36 +399,49 @@ class _StaffCard extends StatelessWidget {
             width: selected ? 2 : 1,
           ),
         ),
-        child: Row(children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: selected ? AppColors.accent : AppColors.surfaceAlt,
-            child: Text(
-              staff.name[0].toUpperCase(),
-              style: TextStyle(
-                color: selected ? Colors.white : AppColors.textSecondary,
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: selected
+                  ? AppColors.accent
+                  : AppColors.surfaceAlt,
+              child: Text(
+                staff.name[0].toUpperCase(),
+                style: TextStyle(
+                  color: selected ? Colors.white : AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(staff.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600,
-                        fontSize: 15, color: AppColors.textPrimary)),
-                Text(staff.role,
-                    style: const TextStyle(fontSize: 12,
-                        color: AppColors.textSecondary)),
-              ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    staff.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    staff.role,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          if (selected)
-            const Icon(Icons.check_circle, color: AppColors.accent, size: 22),
-        ]),
+            if (selected)
+              const Icon(Icons.check_circle, color: AppColors.accent, size: 22),
+          ],
+        ),
       ),
     );
   }
