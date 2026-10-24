@@ -12,6 +12,10 @@
   --accent-soft: #fbeef3;
   --primary: #1c1c1e;
   --primary-ink: #ffffff;
+  --primary-hover: #3a3a3e;
+  --hover-bg: #fafafb;
+  --hover-line: #cfcfd6;
+  --chip-muted: #ececf0;
   --ok: #157f3b;
   --ok-soft: #e3f4e8;
   --warn: #a35b00;
@@ -20,6 +24,36 @@
   --bad-soft: #fde8e6;
   --auto: #6941c6;
   --auto-soft: #f1ecfd;
+  color-scheme: light;
+}
+
+/* Verlet's dark palette (verlet.co), used when the computer is in dark mode. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0a0c;
+    --panel: #16161a;
+    --ink: #ebebec;
+    --muted: #8e8e93;
+    --line: #2a2a2f;
+    --accent: #e06090;
+    --accent-text: #e06090;
+    --accent-soft: #2c1820;
+    --primary: #ffffff;
+    --primary-ink: #0a0a0c;
+    --primary-hover: #d9d9de;
+    --hover-bg: #1e1e23;
+    --hover-line: #3a3a40;
+    --chip-muted: #232328;
+    --ok: #30d158;
+    --ok-soft: #12261a;
+    --warn: #ffd60a;
+    --warn-soft: #2a2610;
+    --bad: #ff453a;
+    --bad-soft: #2d1514;
+    --auto: #bf5af2;
+    --auto-soft: #24182d;
+    color-scheme: dark;
+  }
 }
 
 @theme inline {
@@ -58,10 +92,10 @@ body {
   border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer;
   transition: background 120ms, border-color 120ms;
 }
-.btn:hover:not(:disabled) { border-color: #cfcfd6; background: #fafafb; }
+.btn:hover:not(:disabled) { border-color: var(--hover-line); background: var(--hover-bg); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
-.btn-primary:hover:not(:disabled) { background: #3a3a3e; border-color: #3a3a3e; }
+.btn-primary:hover:not(:disabled) { background: var(--primary-hover); border-color: var(--primary-hover); }
 .btn-ghost { border-color: transparent; background: transparent; }
 .btn-sm { height: 28px; padding: 0 10px; font-size: 13px; }
 
@@ -83,7 +117,7 @@ textarea.input { height: auto; padding: 8px 10px; line-height: 1.45; }
 .chip-bad { background: var(--bad-soft); color: var(--bad); }
 .chip-auto { background: var(--auto-soft); color: var(--auto); }
 .chip-accent { background: var(--accent-soft); color: var(--accent-text); }
-.chip-muted { background: #ececf0; color: var(--muted); }
+.chip-muted { background: var(--chip-muted); color: var(--muted); }
 
 .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 .tbl th { text-align: left; font-weight: 500; color: var(--muted); padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
