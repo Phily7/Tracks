@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+:root {
+  /* Verlet Robotics palette (verlet.co). Accent text is a shade deeper than the brand pink for contrast. */
+  --bg: #f4f4f6;
+  --panel: #ffffff;
+  --ink: #1c1c1e;
+  --muted: #6e6e73;
+  --line: #e3e3e8;
+  --accent: #d64d7a;
+  --accent-text: #b8386a;
+  --accent-soft: #fbeef3;
+  --primary: #1c1c1e;
+  --primary-ink: #ffffff;
+  --ok: #157f3b;
+  --ok-soft: #e3f4e8;
+  --warn: #a35b00;
+  --warn-soft: #fdf1df;
+  --bad: #b42318;
+  --bad-soft: #fde8e6;
+  --auto: #6941c6;
+  --auto-soft: #f1ecfd;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-text: var(--accent-text);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-auto: var(--auto);
+  --color-auto-soft: var(--auto-soft);
+  --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-dm-serif);
+  --font-mono: var(--font-dm-mono);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+}
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 36px; padding: 0 14px; border-radius: 8px; font-size: 14px; font-weight: 500;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+}
+.btn:hover:not(:disabled) { border-color: #cfcfd6; background: #fafafb; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+.btn-primary:hover:not(:disabled) { background: #3a3a3e; border-color: #3a3a3e; }
+.btn-ghost { border-color: transparent; background: transparent; }
+.btn-sm { height: 28px; padding: 0 10px; font-size: 13px; }
+
+.input {
+  width: 100%; height: 36px; padding: 0 10px; border-radius: 8px; font-size: 14px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+}
+textarea.input { height: auto; padding: 8px 10px; line-height: 1.45; }
+.input:focus, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.hint { font-size: 12px; color: var(--muted); }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px;
+  font-size: 12px; font-weight: 500; white-space: nowrap;
+}
+.chip-ok { background: var(--ok-soft); color: var(--ok); }
+.chip-warn { background: var(--warn-soft); color: var(--warn); }
+.chip-bad { background: var(--bad-soft); color: var(--bad); }
+.chip-auto { background: var(--auto-soft); color: var(--auto); }
+.chip-accent { background: var(--accent-soft); color: var(--accent-text); }
+.chip-muted { background: #ececf0; color: var(--muted); }
+
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl th { text-align: left; font-weight: 500; color: var(--muted); padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tbl td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl tr:last-child td { border-bottom: 0; }
+.cell-input { width: 100%; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 3px 5px; font: inherit; color: inherit; }
+.cell-input:hover { border-color: var(--line); }
+.cell-input:focus { border-color: var(--accent); outline: none; background: var(--panel); }
