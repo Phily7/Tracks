@@ -40,3 +40,22 @@ Supabase for the database, Vercel for the demo.
 - User supplied project `qnvjidujwwpoqdpqwlsb` and an MCP command (added to `.mcp.json`, **read_only=true**). The MCP tools only load after a restart, and read-only must be lifted to run the migration.
 
 **State at end of session:** code complete, no database, not deployed, nothing committed. Next steps are in `progress.md`.
+
+## 2026-10-24 — Session 2: database, deploy, testing setup
+
+**Done**
+- User applied 0001; I applied 0002 (advisor fixes), 0003 (prices by manager), 0004 (`set_role`), 0005 (owner).
+- Supabase URL + publishable key in Vercel (all envs) and `.env.local`; deployed with `vercel --prod`.
+- E2E in Chrome as engineer: email-link login, KiCad upload, cards, READY with prices unpriced, submit + lock.
+  Manager rules (approve guard, roles) checked in SQL as the real users inside rolled-back transactions.
+- Price-break parsing (`Unit1`/`Unit10`) after the user's LCSC BOM came in unpriced.
+- Default Supabase emails link via PKCE, which broke when opened in another browser → switched to implicit flow + `/auth/callback`.
+- Built-in email limit (2/h) blocked testing → user set up Gmail SMTP from their own account (Verlet IT not reachable tonight).
+- Verlet theme from verlet.co + dark mode; Excel/any-layout BOM import; Team panel roles with owner protection.
+
+**Gotchas found**
+- Dashboard "Add user" fails for addresses not on the allowlist (`handle_new_user` raises). Add them to the allowlist first.
+- Supabase dashboard has no "set password"; the user set one with `extensions.crypt(..., extensions.gen_salt('bf'))` in SQL.
+- Supabase email templates are locked until custom SMTP is on.
+- Sequences don't roll back: reset `req_number_seq` after transactional tests.
+- In SQL role tests, look up ids before `set local role authenticated` (RLS hides other profiles).

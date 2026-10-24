@@ -4,8 +4,9 @@ _Last updated: 2026-10-24_
 
 ## Where things stand
 
-**Code: feature complete, builds clean** (`npm run build`, `tsc`, `eslint`: no errors).
-**Database: 0001 applied** (by the user, 2026-10-24). **Deployed:** https://tracks-verlet.vercel.app. Nothing committed to git yet.
+**Live and ready for a first round of testing.** https://tracks-verlet.vercel.app
+Migrations 0001–0005 applied to Supabase `qnvjidujwwpoqdpqwlsb`. Builds clean. Committed on branch `tracks-verlet`
+of the parent `Tracks` repo (not merged to `main`, not pushed).
 
 ## Done ✅
 
@@ -21,27 +22,44 @@ _Last updated: 2026-10-24_
 - [x] Vercel project `tracks-verlet` created and linked (`.vercel/`, `.env.local` holds only `VERCEL_OIDC_TOKEN`)
 - [x] Supabase MCP added to `.mcp.json` (project scope) for project `qnvjidujwwpoqdpqwlsb`
 
-## Next steps (in order)
+## State at end of session 2 (2026-10-24)
 
-State (2026-10-24, end of session 2): live at https://tracks-verlet.vercel.app, migrations 0001–0004 applied, Verlet theme
-(light + system dark), committed on branch `tracks-verlet` of the parent `Tracks` repo.
-- Prices optional for engineers; approve/ordered blocked until every line is priced (0003).
-- BOM parser reads distributor price breaks (`Unit1`, `Unit10`…).
-- `/auth/confirm` handles Supabase's default PKCE link (templates are locked without custom SMTP).
-- Managers promote/demote from the Team panel (`set_role`, 0004). Promoted managers sign in with the email link; no password needed.
-- E2E checked in Chrome as engineer; manager rules checked in SQL as the manager (rolled back).
+**Accounts**
+- `philemonmail77@gmail.com`: manager + **owner** (password login). Only the owner can demote managers; nobody can change the owner.
+- `verletrobotics@gmail.com`: manager, password set by the user via SQL. Shared with testers for the manager side.
+- `philemonmail77+eng@gmail.com`: engineer test account.
+- Allowlist: the two philemon addresses, `verletrobotics@gmail.com`, `@verlet.co`, `@gmail.com` (open Gmail sign-ups for testing).
 
-1. **Custom SMTP.** Interim: Gmail SMTP from the developer's own `philemonmail77@gmail.com` (app password, smtp.gmail.com:465,
-   sender name "Tracks Verlet"). Switch later to a Verlet address (Resend + `verlet.co` DNS, needs Verlet IT); that's a
-   Supabase SMTP-settings change only, no code. Templates use `{{ .ConfirmationURL }}` + `{{ .Token }}`.
-   Allowlist currently includes `@gmail.com` for testing; remove it in the Team panel to close sign-ups
-2. User to check by hand: manager login, pricing, REQ number, approve, Team "Make manager" button, .xlsx opened in Excel
-3. Push / merge the `tracks-verlet` branch when the user wants
+**Email**: custom SMTP through the user's own Gmail (`philemonmail77@gmail.com`, app password, smtp.gmail.com:465, sender
+name "Tracks Verlet"), rate limit 500/h. Supabase's default "Your sign-in link" template is in use (no typed code yet).
+Verified: email delivered, link redirects to `/auth/callback` with the session.
+
+**Built this session**
+- Prices optional for engineers; approve/ordered blocked until every line is priced (0003). Unpriced counts shown.
+- Sign-in links use the implicit flow → `/auth/callback`, so they work in any browser/device (PKCE links didn't).
+- BOM import: .xlsx/.xlsm and CSV/TSV in any layout (`bomFile.ts`, `bom.ts`): sheet picking, header row under titles,
+  synonyms + loose header matches + content inference, headerless files, section/total/repeated-header rows,
+  row-number columns, decimal commas, total-price columns, unit/notes columns, LCSC price breaks.
+  Upload message shows "Read columns: …". Tested on 9 fixtures (not through the live UI).
+- Team panel: Make manager / Make engineer (`set_role`, 0004), owner protection (0005).
+- Verlet theme (DM Sans / DM Serif Display, pink #d64d7a, Verlet mark) + system dark mode.
+- Security advisor fixes (0002).
+
+## Next steps
+
+1. Collect tester feedback (message sent by the user). Watch Supabase auth logs for failed sign-ins.
+2. User to check by hand: an exported .xlsx opened in Excel (status box should read READY TO SEND); an Excel BOM upload on the live site
+3. Optional: paste the template with `{{ .ConfirmationURL }}` + `{{ .Token }}` into "Confirm sign up" and "Magic link or OTP"
+   so emails also carry a typed code
+4. Later: switch SMTP to a Verlet address (Resend + `verlet.co` DNS via Verlet IT); Supabase settings only, no code
+5. When testing ends: remove `@gmail.com` from the allowlist; consider limiting delete-request / allowlist / projects edits to the owner
+6. Merge or push the `tracks-verlet` branch when the user wants
 
 ## Open issues / decisions
 
 - **Supabase free tier is at 2 active projects.** Provisioning through the Vercel Marketplace failed for that reason. The Supabase integration *is* installed on Vercel (free plan), but no resource was created. Using the user's own project `qnvjidujwwpoqdpqwlsb` instead.
-- **Built-in Supabase email is rate-limited** (a few per hour). Fine for a demo; needs custom SMTP (Resend) before engineers really use it.
+- **Email** goes through the developer's personal Gmail for now; move to a Verlet sender before real use.
 - **Screenshot of the Verlet exchange never came through** (it rendered as a blank file icon). Requirements in it, if any, are not captured yet.
+- Old `.xls`, Google Sheets and Numbers files aren't read directly (users export to .xlsx/.csv).
 - The xlsx status box was not recalculated locally (no LibreOffice). The app's readiness logic mirrors the formulas; confirm by opening an exported file in Excel.
 - Ideas not built: Change Order form, email notifications to the manager on submit, price lookup from LCSC/DigiKey, BOM diffs between revisions.
