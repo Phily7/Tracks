@@ -31,7 +31,10 @@ State (2026-10-24, end of session 2): live at https://tracks-verlet.vercel.app, 
 - Managers promote/demote from the Team panel (`set_role`, 0004). Promoted managers sign in with the email link; no password needed.
 - E2E checked in Chrome as engineer; manager rules checked in SQL as the manager (rolled back).
 
-1. **Custom SMTP (Resend) before company testing.** The built-in email sends only a few per hour for the whole project
+1. **Custom SMTP.** Interim: Gmail SMTP from the developer's own `philemonmail77@gmail.com` (app password, smtp.gmail.com:465,
+   sender name "Tracks Verlet"). Switch later to a Verlet address (Resend + `verlet.co` DNS, needs Verlet IT); that's a
+   Supabase SMTP-settings change only, no code. Templates use `{{ .ConfirmationURL }}` + `{{ .Token }}`.
+   Allowlist currently includes `@gmail.com` for testing; remove it in the Team panel to close sign-ups
 2. User to check by hand: manager login, pricing, REQ number, approve, Team "Make manager" button, .xlsx opened in Excel
 3. Push / merge the `tracks-verlet` branch when the user wants
 
