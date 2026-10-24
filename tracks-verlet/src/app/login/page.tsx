@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 import { Logo } from "@/components/Logo";
 
@@ -23,7 +24,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const [codeSent, setCodeSent] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(params.get("error") === "link" ? "That sign-in link expired or was opened in another browser. Ask for a new one." : "");
+  const [error, setError] = useState(params.get("error") === "link" ? "That sign-in link expired or was already used. Ask for a new one." : "");
 
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
@@ -36,9 +37,13 @@ function Login() {
       setError(rpcError ? rpcError.message : "This email isn't set up for Tracks Verlet. Ask your manager to add you.");
       return;
     }
-    const { error } = await sb.auth.signInWithOtp({
+    // Implicit flow for the email link, so it opens in any browser (see /auth/callback).
+    const linkClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      auth: { flowType: "implicit", persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    });
+    const { error } = await linkClient.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true, emailRedirectTo: `${location.origin}/auth/confirm` },
+      options: { shouldCreateUser: true, emailRedirectTo: `${location.origin}/auth/callback` },
     });
     setBusy(false);
     if (error) setError(error.message);
@@ -105,7 +110,7 @@ function Login() {
 
           {mode === "engineer" && codeSent && (
             <form onSubmit={verifyCode} className="space-y-4">
-              <p className="text-sm">We emailed <strong>{email}</strong>. Click the link in it (in this browser), or type the code if the email shows one.</p>
+              <p className="text-sm">We emailed <strong>{email}</strong>. Click the link in it (any browser or phone is fine), or type the code if the email shows one.</p>
               <div>
                 <label className="label" htmlFor="code">Code</label>
                 <input id="code" className="input text-center font-mono text-lg tracking-[0.3em]" inputMode="numeric"
