@@ -99,9 +99,9 @@ function Login() {
           {mode === "engineer" && !codeSent && (
             <form onSubmit={sendCode} className="space-y-4">
               <div>
-                <label className="label" htmlFor="email">Work email</label>
+                <label className="label" htmlFor="email">Email</label>
                 <input id="email" className="input" type="email" required autoFocus value={email}
-                  onChange={(e) => setEmail(e.target.value)} placeholder="you@verlet.co" />
+                  onChange={(e) => setEmail(e.target.value)} placeholder="you@verlet.co or you@gmail.com" />
               </div>
               <button className="btn btn-primary w-full" disabled={busy}>{busy ? "Sending…" : "Email me a sign-in code"}</button>
               <p className="hint text-center">No password. We email you a sign-in link.</p>
