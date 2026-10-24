@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { StatusChip } from "@/components/StatusChip";
 import { createRequest, useMe } from "@/lib/data";
+import { BOM_ACCEPT } from "@/lib/bomFile";
 import { importBomFile, titleFromFilename } from "@/lib/importBom";
 import { supabase } from "@/lib/supabase/client";
 import { usd, type ProcRequest } from "@/lib/template";
@@ -77,10 +78,10 @@ export default function MyRequests() {
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
           </svg>
-          <span className="font-medium">{busy || "Drop a BOM CSV here, or click to choose"}</span>
-          <span className="hint">KiCad (Symbol Fields / BOM export), Fusion 360 BOM, or any CSV with part names and quantities</span>
+          <span className="font-medium">{busy || "Drop a BOM (Excel or CSV) here, or click to choose"}</span>
+          <span className="hint">KiCad, Fusion 360, or any .xlsx / .csv parts list. Column names don&apos;t matter; missing details get asked for next.</span>
         </button>
-        <input ref={fileRef} type="file" accept=".csv,.tsv,.txt" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) startFromFile(f); e.target.value = ""; }} />
+        <input ref={fileRef} type="file" accept={BOM_ACCEPT} hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) startFromFile(f); e.target.value = ""; }} />
         {error && <p className="mb-6 rounded-md bg-bad-soft px-3 py-2 text-sm text-bad" role="alert">{error}</p>}
 
         {rows === null ? (

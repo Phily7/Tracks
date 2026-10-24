@@ -10,6 +10,8 @@ import { StatusBox } from "@/components/StatusBox";
 import { StatusChip } from "@/components/StatusChip";
 import { addBlankItem, deleteRequest, loadRequest, updateProfile, updateRequest, useMe, useProjects, type RequestBundle } from "@/lib/data";
 import { downloadRequestXlsx } from "@/lib/download";
+import { describeMapping } from "@/lib/bom";
+import { BOM_ACCEPT } from "@/lib/bomFile";
 import { importBomFile } from "@/lib/importBom";
 import { supabase } from "@/lib/supabase/client";
 import { MAX_LINES_PER_FILE, readiness, STATUSES, URGENCIES, type ProcRequest, type RequestStatus, type Urgency } from "@/lib/template";
@@ -43,7 +45,9 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
     try {
       const bom = await importBomFile(request.id, file, items);
       const skipped = bom.skipped.map((s) => `${s.count} ${s.reason.toLowerCase()}`).join(", ");
-      setNotice({ tone: "ok", text: `Imported ${bom.items.length} part${bom.items.length === 1 ? "" : "s"} from a ${bom.source === "fusion360" ? "Fusion 360" : bom.source === "kicad" ? "KiCad" : "CSV"} BOM (${bom.rawRowCount} rows).${skipped ? ` Left out: ${skipped}.` : ""}` });
+      const kind = bom.source === "fusion360" ? "Fusion 360" : bom.source === "kicad" ? "KiCad" : bom.sheet ? "spreadsheet" : "CSV";
+      const read = describeMapping(bom.mapping);
+      setNotice({ tone: "ok", text: `Imported ${bom.items.length} part${bom.items.length === 1 ? "" : "s"} from a ${kind} BOM${bom.sheet ? ` (sheet "${bom.sheet}")` : ""}, ${bom.rawRowCount} rows.${read ? ` Read columns: ${read}.` : ""}${skipped ? ` Left out: ${skipped}.` : ""}` });
       await reload();
     } catch (e) {
       setNotice({ tone: "bad", text: (e as Error).message });
@@ -101,7 +105,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
             </button>
           )}
         </div>
-        <input ref={fileRef} type="file" accept=".csv,.tsv,.txt" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ""; }} />
+        <input ref={fileRef} type="file" accept={BOM_ACCEPT} hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ""; }} />
       </div>
 
       <div className="space-y-5">
@@ -132,7 +136,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
           <button type="button" onClick={() => fileRef.current?.click()}
             className="card flex w-full flex-col items-center gap-1 border-2 border-dashed px-6 py-8 text-center hover:border-accent"
             onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) upload(f); }}>
-            <span className="font-medium">Drop a BOM CSV here, or click to choose</span>
+            <span className="font-medium">Drop a BOM (Excel or CSV) here, or click to choose</span>
             <span className="hint">KiCad or Fusion 360 export. You can also add rows by hand below.</span>
           </button>
         )}

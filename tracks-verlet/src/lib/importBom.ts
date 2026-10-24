@@ -1,12 +1,13 @@
 "use client";
-import { parseBomCsv, type ParsedBom } from "./bom";
+import { parseBomRows, type ParsedBom } from "./bom";
+import { readBomGrid } from "./bomFile";
 import { addItems, recordUpload } from "./data";
 import type { LineItem } from "./template";
 
-export async function importBomFile(requestId: string, file: File, existing: LineItem[]): Promise<ParsedBom> {
-  if (!/\.(csv|tsv|txt)$/i.test(file.name)) throw new Error("Upload a .csv export from KiCad, Fusion 360 or a spreadsheet.");
-  const bom = parseBomCsv(await file.text(), file.name);
-  if (!bom.items.length) throw new Error("No parts found. Check the file has a header row with names or values and quantities.");
+export async function importBomFile(requestId: string, file: File, existing: LineItem[]): Promise<ParsedBom & { sheet: string | null }> {
+  const { rows, sheet } = await readBomGrid(file);
+  const bom = parseBomRows(rows, file.name);
+  if (!bom.items.length) throw new Error("No parts found. The file needs at least a column of part names or descriptions.");
 
   // Parts already on the request (same name) get their quantity topped up instead of duplicated.
   const byName = new Map(existing.map((i) => [(i.item_name ?? "").trim().toLowerCase(), i]));
@@ -24,7 +25,7 @@ export async function importBomFile(requestId: string, file: File, existing: Lin
         return supabase().from("line_items").update({ qty: (cur.qty ?? 0) + d.qty }).eq("id", cur.id);
       }),
   );
-  return bom;
+  return { ...bom, sheet };
 }
 
 export const titleFromFilename = (name: string) =>
