@@ -106,7 +106,7 @@ export default function ManagerPage() {
               </ul>
             )}
           </section>
-          <Team meId={me.id} />
+          <Team meId={me.id} meOwner={!!me.is_owner} />
           <Projects />
         </aside>
       </div>
@@ -123,7 +123,7 @@ function Kpi({ label, value, tone }: { label: string; value: string; tone?: "bad
   );
 }
 
-function Team({ meId }: { meId: string }) {
+function Team({ meId, meOwner }: { meId: string; meOwner: boolean }) {
   const [entries, setEntries] = useState<string[]>([]);
   const [people, setPeople] = useState<Profile[]>([]);
   const [v, setV] = useState("");
@@ -172,13 +172,20 @@ function Team({ meId }: { meId: string }) {
         ))}
       </ul>
       <h3 className="mb-1 text-xs font-medium text-muted">Signed up</h3>
-      <p className="hint mb-2">To add a manager, have them sign in once with their email, then promote them here.</p>
+      <p className="hint mb-2">
+        To add a manager, have them sign in once with their email, then promote them here.
+        {!meOwner && " Only the owner can remove a manager."}
+      </p>
       <ul className="space-y-1.5 text-sm">
         {people.map((p) => (
           <li key={p.id} className="flex items-center justify-between gap-2">
             <span className="min-w-0 truncate" title={p.email}>{p.full_name || p.email}</span>
             {p.id === meId ? (
-              <span className="text-xs text-muted">{p.role} (you)</span>
+              <span className="text-xs text-muted">{p.is_owner ? "owner" : p.role} (you)</span>
+            ) : p.is_owner ? (
+              <span className="text-xs text-accent-text">owner</span>
+            ) : p.role === "manager" && !meOwner ? (
+              <span className="text-xs text-accent-text">manager</span>
             ) : (
               <span className="flex shrink-0 items-center gap-2">
                 <span className={`text-xs ${p.role === "manager" ? "text-accent-text" : "text-muted"}`}>{p.role}</span>

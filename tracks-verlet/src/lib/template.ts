@@ -21,6 +21,7 @@ export type Profile = {
   full_name: string | null;
   phone: string | null;
   role: "manager" | "engineer";
+  is_owner?: boolean;
 };
 
 export type ProcRequest = {
