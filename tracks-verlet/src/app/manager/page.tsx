@@ -106,7 +106,7 @@ export default function ManagerPage() {
               </ul>
             )}
           </section>
-          <Team />
+          <Team meId={me.id} />
           <Projects />
         </aside>
       </div>
@@ -123,7 +123,7 @@ function Kpi({ label, value, tone }: { label: string; value: string; tone?: "bad
   );
 }
 
-function Team() {
+function Team({ meId }: { meId: string }) {
   const [entries, setEntries] = useState<string[]>([]);
   const [people, setPeople] = useState<Profile[]>([]);
   const [v, setV] = useState("");
@@ -148,6 +148,11 @@ function Team() {
     if (error) setError(error.message); else { setV(""); load(); }
   };
   const remove = async (entry: string) => { await supabase().from("allowlist").delete().eq("entry", entry); load(); };
+  const setRole = async (p: Profile, role: Profile["role"]) => {
+    setError("");
+    const { error } = await supabase().rpc("set_role", { target: p.id, new_role: role });
+    if (error) setError(error.message); else load();
+  };
 
   return (
     <section className="card p-4">
@@ -167,11 +172,21 @@ function Team() {
         ))}
       </ul>
       <h3 className="mb-1 text-xs font-medium text-muted">Signed up</h3>
-      <ul className="space-y-1 text-sm">
+      <p className="hint mb-2">To add a manager, have them sign in once with their email, then promote them here.</p>
+      <ul className="space-y-1.5 text-sm">
         {people.map((p) => (
-          <li key={p.id} className="flex justify-between gap-2">
-            <span className="truncate">{p.full_name || p.email}</span>
-            <span className="text-xs text-muted">{p.role}</span>
+          <li key={p.id} className="flex items-center justify-between gap-2">
+            <span className="min-w-0 truncate" title={p.email}>{p.full_name || p.email}</span>
+            {p.id === meId ? (
+              <span className="text-xs text-muted">{p.role} (you)</span>
+            ) : (
+              <span className="flex shrink-0 items-center gap-2">
+                <span className={`text-xs ${p.role === "manager" ? "text-accent-text" : "text-muted"}`}>{p.role}</span>
+                <button className="btn btn-sm" onClick={() => setRole(p, p.role === "manager" ? "engineer" : "manager")}>
+                  {p.role === "manager" ? "Make engineer" : "Make manager"}
+                </button>
+              </span>
+            )}
           </li>
         ))}
       </ul>

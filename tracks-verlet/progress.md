@@ -23,19 +23,17 @@ _Last updated: 2026-10-24_
 
 ## Next steps (in order)
 
-Done (2026-10-24, session 2): 0001 (user), 0002 hardening, 0003 prices-by-manager applied; allowlist set; philemonmail77@gmail.com
-promoted to manager; env vars on Vercel; deployed https://tracks-verlet.vercel.app.
-- Prices no longer block submit (SQL `line_issues` + `template.ts`). Approve/ordered is refused until every line has a price
-  (`guard_request_status`). `unpriced_count` shown on the status box, manager panel and manager list.
-- BOM parser reads distributor price breaks (`Unit1`, `Unit10`, `Price @ 100`…) and picks the break for the line qty.
-  Backfilled the user's existing draft from `source_row` (1 line still unpriced).
+State (2026-10-24, end of session 2): live at https://tracks-verlet.vercel.app, migrations 0001–0004 applied, Verlet theme
+(light + system dark), committed on branch `tracks-verlet` of the parent `Tracks` repo.
+- Prices optional for engineers; approve/ordered blocked until every line is priced (0003).
+- BOM parser reads distributor price breaks (`Unit1`, `Unit10`…).
+- `/auth/confirm` handles Supabase's default PKCE link (templates are locked without custom SMTP).
+- Managers promote/demote from the Team panel (`set_role`, 0004). Promoted managers sign in with the email link; no password needed.
+- E2E checked in Chrome as engineer; manager rules checked in SQL as the manager (rolled back).
 
-1. ~~Auth config~~ done by the user: URL config set. Templates are locked without custom SMTP, so the app handles the default
-   PKCE link (`/auth/confirm?code=`). Must be opened in the same browser.
-2. E2E (Chrome, 2026-10-24): engineer link login ✅, KiCad sample upload ✅, cards ✅, READY with 10 unpriced ✅, submit + lock ✅.
-   Manager approve guard checked in SQL as the manager (rolled back) ✅. **Still to check by hand:** manager password login,
-   pricing in the table, REQ number, approve, .xlsx download opened in Excel.
-3. Ask before committing
+1. **Custom SMTP (Resend) before company testing.** The built-in email sends only a few per hour for the whole project
+2. User to check by hand: manager login, pricing, REQ number, approve, Team "Make manager" button, .xlsx opened in Excel
+3. Push / merge the `tracks-verlet` branch when the user wants
 
 ## Open issues / decisions
 

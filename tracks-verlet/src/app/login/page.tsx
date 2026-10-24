@@ -99,7 +99,7 @@ function Login() {
                   onChange={(e) => setEmail(e.target.value)} placeholder="you@verlet.co" />
               </div>
               <button className="btn btn-primary w-full" disabled={busy}>{busy ? "Sending…" : "Email me a sign-in code"}</button>
-              <p className="hint text-center">No password. We email you a one-time code.</p>
+              <p className="hint text-center">No password. We email you a sign-in link.</p>
             </form>
           )}
 
@@ -130,6 +130,13 @@ function Login() {
                 <input id="m-pass" className="input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
               <button className="btn btn-primary w-full" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+              <p className="hint text-center">
+                No password?{" "}
+                <button type="button" className="text-accent-text hover:underline" onClick={() => { setMode("engineer"); setError(""); }}>
+                  Sign in with an email link
+                </button>{" "}
+                — managers can too.
+              </p>
             </form>
           )}
 
