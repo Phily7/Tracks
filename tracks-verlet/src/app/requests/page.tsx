@@ -11,7 +11,7 @@ import { importBomFile, titleFromFilename } from "@/lib/importBom";
 import { supabase } from "@/lib/supabase/client";
 import { usd, type ProcRequest } from "@/lib/template";
 
-type Summary = ProcRequest & { line_count: number; est_total_usd: number; issues: string[] };
+type Summary = ProcRequest & { line_count: number; est_total_usd: number; issues: string[]; pending_changes: number };
 
 export default function MyRequests() {
   const { me } = useMe();
@@ -105,7 +105,7 @@ export default function MyRequests() {
                     <td>{r.line_count}</td>
                     <td>{usd(Number(r.est_total_usd))}</td>
                     <td>{r.needed_by ?? "—"}</td>
-                    <td><StatusChip status={r.status} ready={r.issues.length === 0} /></td>
+                    <td><StatusChip status={r.status} ready={r.issues.length === 0} pending={r.pending_changes} /></td>
                   </tr>
                 ))}
               </tbody>

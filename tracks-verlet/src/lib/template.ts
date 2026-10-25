@@ -38,6 +38,9 @@ export type ProcRequest = {
   manager_note: string | null;
   created_at: string;
   updated_at: string;
+  // Confirmed header at the last approval (null until first approved)
+  approved_snapshot: Partial<Record<HeaderField, string | null>> | null;
+  approved_at: string | null;
 };
 
 export type LineItem = {
@@ -57,13 +60,57 @@ export type LineItem = {
   source_row: Record<string, string> | null;
   // which fields the system filled in itself (shown as "auto" in the UI)
   auto_fields: string[] | null;
+  // Confirmed version at the last approval (null = added since), and "delete once approved"
+  approved: Partial<Record<TrackedField, string | number | null>> | null;
+  removed: boolean;
 };
+
+// Fields that make up a confirmed line / header. Keep in sync with line_fields() / header_fields() in SQL.
+export const TRACKED_FIELDS = ["item_name", "qty", "unit", "specification", "datasheet_url", "air_freight",
+  "est_unit_price_usd", "suggested_vendor", "notes"] as const;
+export type TrackedField = (typeof TRACKED_FIELDS)[number];
+export const HEADER_FIELDS = ["title", "project", "needed_by", "urgency", "justification"] as const;
+export type HeaderField = (typeof HEADER_FIELDS)[number];
+
+const same = (a: unknown, b: unknown) => String(a ?? "") === String(b ?? "");
+
+export type LineChange = { kind: "added" | "changed" | "removed" | null; fields: TrackedField[] };
+
+/** How a line differs from the confirmed BOM. Only meaningful once the request has been approved. */
+export function lineChange(item: LineItem, tracking: boolean): LineChange {
+  if (!tracking) return { kind: null, fields: [] };
+  if (item.removed) return { kind: "removed", fields: [] };
+  if (!item.approved) return { kind: "added", fields: [] };
+  const fields = TRACKED_FIELDS.filter((f) => !same(item[f], item.approved![f]));
+  return { kind: fields.length ? "changed" : null, fields };
+}
+
+/** Header fields that differ from the confirmed version. */
+export function headerChanges(req: ProcRequest): HeaderField[] {
+  if (!req.approved_at || !req.approved_snapshot) return [];
+  return HEADER_FIELDS.filter((f) => !same(req[f], req.approved_snapshot![f]));
+}
+
+export function pendingChanges(req: ProcRequest, items: LineItem[]): number {
+  if (!req.approved_at) return 0;
+  return items.filter((i) => lineChange(i, true).kind).length + (headerChanges(req).length ? 1 : 0);
+}
+
+/** The confirmed BOM: lines as they were last approved, including ones marked for removal. */
+export function confirmedItems(items: LineItem[]): LineItem[] {
+  return items.filter((i) => i.approved).map((i) => ({ ...i, ...i.approved, removed: false } as LineItem));
+}
+
+export function confirmedRequest(req: ProcRequest): ProcRequest {
+  return req.approved_snapshot ? ({ ...req, ...req.approved_snapshot } as ProcRequest) : req;
+}
 
 const filled = (s: string | null | undefined) => (s ?? "").trim().length > 0;
 const isNum = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n);
 
 /** Column L "Check" for one row. Empty array means "OK". */
 export function lineIssues(item: LineItem, all: LineItem[]): string[] {
+  if (item.removed) return [];
   const named = filled(item.item_name);
   const issues: string[] = [];
   if (named && !isNum(item.qty)) issues.push("Qty missing");
@@ -73,7 +120,7 @@ export function lineIssues(item: LineItem, all: LineItem[]): string[] {
   if (named && !filled(item.air_freight)) issues.push("Air-freight answer missing");
   if (named) {
     const key = item.item_name!.trim().toLowerCase();
-    if (all.filter((o) => (o.item_name ?? "").trim().toLowerCase() === key).length > 1)
+    if (all.filter((o) => !o.removed && (o.item_name ?? "").trim().toLowerCase() === key).length > 1)
       issues.push("Duplicate item in this request");
   }
   if (!named && (isNum(item.qty) || filled(item.specification))) issues.push("Item name missing");
@@ -106,8 +153,9 @@ export type Readiness = {
 export function readiness(
   req: ProcRequest,
   owner: Pick<Profile, "full_name" | "email"> | null,
-  items: LineItem[],
+  allItems: LineItem[],
 ): Readiness {
+  const items = allItems.filter((i) => !i.removed);
   const headerMissing = headerIssues(req, owner);
   const named = items.filter((i) => filled(i.item_name) || isNum(i.qty) || filled(i.specification));
   const lineCount = items.filter((i) => filled(i.item_name)).length;

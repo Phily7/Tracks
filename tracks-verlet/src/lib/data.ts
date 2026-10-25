@@ -46,7 +46,25 @@ export async function loadRequest(id: string): Promise<RequestBundle | null> {
 // numeric columns come back as strings from PostgREST
 function normaliseItem(i: LineItem): LineItem {
   const n = (v: unknown) => (v === null || v === undefined || v === "" ? null : Number(v));
-  return { ...i, qty: n(i.qty), est_unit_price_usd: n(i.est_unit_price_usd), auto_fields: i.auto_fields ?? [] };
+  return { ...i, qty: n(i.qty), est_unit_price_usd: n(i.est_unit_price_usd), auto_fields: i.auto_fields ?? [], removed: !!i.removed };
+}
+
+/** Manager: make the working version the confirmed BOM (first approval and every "approve changes"). */
+export async function approveRequest(id: string) {
+  const { error } = await supabase().rpc("approve_request", { rid: id });
+  if (error) throw error;
+}
+
+/** Throw away everything changed since the last approval. */
+export async function discardChanges(id: string) {
+  const { error } = await supabase().rpc("discard_changes", { rid: id });
+  if (error) throw error;
+}
+
+/** Confirmed lines can't be deleted outright; they're marked and go when the change is approved. */
+export async function setRemoved(id: string, removed: boolean) {
+  const { error } = await supabase().from("line_items").update({ removed }).eq("id", id);
+  if (error) throw error;
 }
 
 export async function updateRequest(id: string, patch: Partial<ProcRequest>) {

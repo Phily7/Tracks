@@ -18,7 +18,7 @@ const blank = (s: string | null | undefined) => (s ?? "").trim().length === 0;
 const itemText = (i: LineItem) => `${i.item_name ?? ""} ${i.specification ?? ""}`;
 
 export function buildCards(req: ProcRequest, owner: Profile | null, items: LineItem[]): Card[] {
-  const named = items.filter((i) => !blank(i.item_name));
+  const named = items.filter((i) => !i.removed && !blank(i.item_name));
   const cards: Card[] = [];
 
   const fields: HeaderField[] = [];

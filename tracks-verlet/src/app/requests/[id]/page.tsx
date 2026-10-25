@@ -8,13 +8,16 @@ import { LineItemsTable } from "@/components/LineItemsTable";
 import { QuestionFlow } from "@/components/QuestionFlow";
 import { StatusBox } from "@/components/StatusBox";
 import { StatusChip } from "@/components/StatusChip";
-import { addBlankItem, deleteRequest, loadRequest, updateProfile, updateRequest, useMe, useProjects, type RequestBundle } from "@/lib/data";
+import { addBlankItem, approveRequest, deleteRequest, discardChanges, loadRequest, updateProfile, updateRequest, useMe, useProjects, type RequestBundle } from "@/lib/data";
 import { downloadRequestXlsx } from "@/lib/download";
 import { describeMapping } from "@/lib/bom";
 import { BOM_ACCEPT } from "@/lib/bomFile";
 import { importBomFile } from "@/lib/importBom";
 import { supabase } from "@/lib/supabase/client";
-import { MAX_LINES_PER_FILE, readiness, STATUSES, URGENCIES, type ProcRequest, type RequestStatus, type Urgency } from "@/lib/template";
+import {
+  confirmedItems, confirmedRequest, headerChanges, MAX_LINES_PER_FILE, pendingChanges, readiness, STATUSES, URGENCIES,
+  type HeaderField, type ProcRequest, type RequestStatus, type Urgency,
+} from "@/lib/template";
 
 export default function RequestPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -37,7 +40,11 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
   const { request, owner, items } = bundle;
   const isManager = me?.role === "manager";
   const isOwner = me?.id === request.owner_id;
-  const editable = isManager || (isOwner && request.status === "draft");
+  // Engineers keep editing their own requests after submitting; once approved, edits become pending changes.
+  const editable = isManager || isOwner;
+  const tracking = !!request.approved_at;
+  const pending = pendingChanges(request, items);
+  const approvedOn = request.approved_at ? new Date(request.approved_at).toLocaleDateString() : "";
 
   async function upload(file: File) {
     setNotice(null);
@@ -59,7 +66,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
     setBusy("Submitting…");
     try {
       await updateRequest(request.id, { status: "submitted" });
-      setNotice({ tone: "ok", text: "Submitted. Procurement can see it now and will reply with a REQ number." });
+      setNotice({ tone: "ok", text: "Submitted. Procurement can see it now and will reply with a REQ number. You can still edit it until it's approved." });
       await reload();
     } catch (e) {
       setNotice({ tone: "bad", text: (e as Error).message });
@@ -70,7 +77,9 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
   async function download() {
     if (!owner) return;
     setBusy("Preparing spreadsheet…");
-    try { await downloadRequestXlsx(request, owner, items, projects); } catch (e) { setNotice({ tone: "bad", text: (e as Error).message }); }
+    // Once approved, procurement buys from the confirmed BOM, not from edits still waiting for approval.
+    const [req, rows] = tracking ? [confirmedRequest(request), confirmedItems(items)] : [request, items];
+    try { await downloadRequestXlsx(req, owner, rows, projects); } catch (e) { setNotice({ tone: "bad", text: (e as Error).message }); }
     setBusy("");
   }
 
@@ -86,8 +95,8 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
         <div className="min-w-0">
           <Link href={isManager && !isOwner ? "/manager" : "/requests"} className="hint hover:text-ink">← Back</Link>
           <div className="mt-1 flex flex-wrap items-center gap-3">
-            <TitleEditor request={request} editable={editable} onSaved={reload} />
-            <StatusChip status={request.status} ready={r!.ready} />
+            <TitleEditor key={request.updated_at} request={request} editable={editable} onSaved={reload} />
+            <StatusChip status={request.status} ready={r!.ready} pending={pending} />
             {request.req_number && <span className="font-mono text-sm text-muted">{request.req_number}</span>}
           </div>
           <p className="hint mt-1">
@@ -97,11 +106,14 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
         </div>
         <div className="flex flex-wrap gap-2">
           {editable && <button className="btn" onClick={() => fileRef.current?.click()} disabled={!!busy}>Upload BOM</button>}
-          <button className="btn" onClick={download} disabled={!!busy || !owner}>Download .xlsx</button>
-          {isOwner && request.status === "draft" && (
+          <button className="btn" onClick={download} disabled={!!busy || !owner}
+            title={tracking ? "The confirmed BOM, without changes still waiting for approval" : ""}>
+            {tracking ? "Download confirmed .xlsx" : "Download .xlsx"}
+          </button>
+          {isOwner && (request.status === "draft" || request.status === "rejected") && (
             <button className="btn btn-primary" onClick={submit} disabled={!!busy || !r!.ready}
               title={r!.ready ? "" : "Finish the questions until the status reads READY TO SEND"}>
-              Submit to procurement
+              {request.status === "rejected" ? "Resubmit" : "Submit to procurement"}
             </button>
           )}
         </div>
@@ -120,9 +132,17 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
           </p>
         )}
 
-        {request.status !== "draft" && isOwner && !isManager && (
+        {tracking && pending > 0 && (
+          <ChangesBanner request={request} pending={pending} approvedOn={approvedOn} isManager={isManager} onSaved={reload} />
+        )}
+        {tracking && pending === 0 && editable && (
           <p className="rounded-md bg-accent-soft px-3 py-2 text-sm">
-            This request has been sent, so it&apos;s locked. To change it, use the Change Order form and quote your REQ number.
+            Approved on {approvedOn}. You can still edit it: changes are highlighted and join the confirmed BOM once a manager approves them.
+          </p>
+        )}
+        {request.status === "submitted" && !tracking && isOwner && !isManager && (
+          <p className="rounded-md bg-accent-soft px-3 py-2 text-sm">
+            Sent to procurement. You can still edit it until it&apos;s approved, for example if they ask you to clarify something.
           </p>
         )}
 
@@ -130,7 +150,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
           <p className="rounded-md border border-accent bg-accent-soft px-3 py-2 text-sm"><strong>Note from procurement:</strong> {request.manager_note}</p>
         )}
 
-        {isManager && <ManagerPanel request={request} unpriced={r!.unpriced} onSaved={reload} />}
+        {isManager && <ManagerPanel request={request} unpriced={r!.unpriced} ready={r!.ready} onSaved={reload} />}
 
         {editable && items.length === 0 && (
           <button type="button" onClick={() => fileRef.current?.click()}
@@ -145,17 +165,27 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
 
         <section>
           <div className="mb-2 flex items-end justify-between">
-            <h2 className="font-semibold">Line items</h2>
+            <h2 className="font-semibold">
+              {!tracking ? "Line items" : pending ? "Line items, with pending changes" : "Confirmed BOM"}
+            </h2>
             {editable && (
               <button className="btn btn-sm" onClick={async () => { await addBlankItem(request.id, items.reduce((m, i) => Math.max(m, i.position), 0) + 1); await reload(); }}>
                 + Add row
               </button>
             )}
           </div>
-          <LineItemsTable items={items} editable={editable} onSaved={reload} />
+          <LineItemsTable items={items} editable={editable} tracking={tracking} onSaved={reload} />
         </section>
 
-        <RequestDetails request={request} owner={owner} projects={projects} editable={editable} canEditName={isOwner} onSaved={reload} />
+        {tracking && pending > 0 && (
+          <details className="card p-4">
+            <summary className="cursor-pointer font-semibold">Confirmed BOM <span className="hint font-normal">as approved on {approvedOn}</span></summary>
+            <div className="mt-3"><LineItemsTable items={confirmedItems(items)} editable={false} onSaved={reload} /></div>
+          </details>
+        )}
+
+        <RequestDetails key={request.updated_at} request={request} owner={owner} projects={projects} editable={editable} canEditName={isOwner} onSaved={reload}
+          changed={headerChanges(request)} />
 
         {isOwner && request.status === "draft" && (
           <div className="pt-4 text-right">
@@ -164,6 +194,39 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
         )}
       </div>
     </AppShell>
+  );
+}
+
+function ChangesBanner({ request, pending, approvedOn, isManager, onSaved }: {
+  request: ProcRequest; pending: number; approvedOn: string; isManager: boolean; onSaved: () => Promise<void>;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState("");
+  const run = async (fn: () => Promise<void>) => {
+    setError("");
+    try { await fn(); setConfirming(false); await onSaved(); } catch (e) { setError((e as Error).message); }
+  };
+  return (
+    <section className="rounded-lg border border-warn bg-warn-soft px-4 py-3 text-sm" aria-live="polite">
+      <p>
+        <strong>{pending} pending change{pending === 1 ? "" : "s"}</strong> since this was approved on {approvedOn}.
+        {" "}Highlighted below: <span className="chip chip-ok">New</span> <span className="chip chip-warn">Changed</span> <span className="chip chip-bad">Removed</span>.
+        {" "}{isManager ? "Approving adds them to the confirmed BOM." : "A manager needs to approve them before they join the confirmed BOM."}
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        {isManager && <button className="btn btn-primary btn-sm" onClick={() => run(() => approveRequest(request.id))}>Approve changes</button>}
+        {!confirming ? (
+          <button className="btn btn-sm" onClick={() => setConfirming(true)}>Discard changes</button>
+        ) : (
+          <>
+            <span>Go back to the confirmed BOM?</span>
+            <button className="btn btn-sm text-bad" onClick={() => run(() => discardChanges(request.id))}>Yes, discard</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setConfirming(false)}>Keep them</button>
+          </>
+        )}
+      </div>
+      {error && <p className="mt-2 text-bad" role="alert">{error}</p>}
+    </section>
   );
 }
 
@@ -179,13 +242,19 @@ function TitleEditor({ request, editable, onSaved }: { request: ProcRequest; edi
   );
 }
 
-function RequestDetails({ request, owner, projects, editable, canEditName, onSaved }: {
+function RequestDetails({ request, owner, projects, editable, canEditName, onSaved, changed }: {
   request: ProcRequest; owner: RequestBundle["owner"]; projects: string[]; editable: boolean; canEditName: boolean; onSaved: () => Promise<void>;
+  changed: HeaderField[];
 }) {
   const save = async (patch: Partial<ProcRequest>) => { await updateRequest(request.id, patch); await onSaved(); };
+  // The confirmed value, for header fields edited since approval.
+  const was = (f: HeaderField) => (changed.includes(f) ? request.approved_snapshot?.[f] ?? "—" : undefined);
   return (
     <section className="card p-5">
       <h2 className="mb-4 font-semibold">Request details</h2>
+      {changed.includes("title") && (
+        <p className="mb-3 text-sm">Title changed since approval. Was: <del className="text-muted">{request.approved_snapshot?.title || "—"}</del></p>
+      )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Field label="Your name">
           <input className="input" defaultValue={owner?.full_name ?? ""} disabled={!canEditName}
@@ -196,23 +265,23 @@ function RequestDetails({ request, owner, projects, editable, canEditName, onSav
           <input className="input" defaultValue={owner?.phone ?? ""} disabled={!canEditName}
             onBlur={async (e) => { if (owner && e.target.value.trim() !== (owner.phone ?? "")) { await updateProfile(owner.id, { phone: e.target.value.trim() || null }); await onSaved(); } }} />
         </Field>
-        <Field label="Project / cost centre">
+        <Field label="Project / cost centre" was={was("project")}>
           <select className="input" value={request.project ?? ""} disabled={!editable} onChange={(e) => save({ project: e.target.value || null })}>
             <option value="">Choose…</option>
             {projects.map((p) => <option key={p}>{p}</option>)}
           </select>
         </Field>
-        <Field label="Needed by">
+        <Field label="Needed by" was={was("needed_by")}>
           <input type="date" className="input" value={request.needed_by ?? ""} disabled={!editable} onChange={(e) => save({ needed_by: e.target.value || null })} />
         </Field>
-        <Field label="Urgency">
+        <Field label="Urgency" was={was("urgency")}>
           <select className="input" value={request.urgency ?? ""} disabled={!editable} onChange={(e) => save({ urgency: (e.target.value || null) as Urgency | null })}>
             <option value="">Choose…</option>
             {URGENCIES.map((u) => <option key={u}>{u}</option>)}
           </select>
         </Field>
         <div className="sm:col-span-2 lg:col-span-4">
-          <Field label="Why this is needed">
+          <Field label="Why this is needed" was={was("justification")}>
             <textarea className="input" rows={2} defaultValue={request.justification ?? ""} disabled={!editable}
               onBlur={(e) => { if (e.target.value.trim() !== (request.justification ?? "")) save({ justification: e.target.value.trim() || null }); }} />
           </Field>
@@ -222,11 +291,17 @@ function RequestDetails({ request, owner, projects, editable, canEditName, onSav
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="block"><span className="label">{label}</span>{children}</label>;
+function Field({ label, children, was }: { label: string; children: React.ReactNode; was?: string | null }) {
+  return (
+    <label className={`block ${was !== undefined ? "rounded-md bg-warn-soft p-1.5 -m-1.5" : ""}`}>
+      <span className="label">{label}{was !== undefined && <span className="chip chip-warn ml-2">Changed</span>}</span>
+      {children}
+      {was !== undefined && <span className="mt-1 block text-xs text-muted">Was: <del>{was || "—"}</del></span>}
+    </label>
+  );
 }
 
-function ManagerPanel({ request, unpriced, onSaved }: { request: ProcRequest; unpriced: number; onSaved: () => Promise<void> }) {
+function ManagerPanel({ request, unpriced, ready, onSaved }: { request: ProcRequest; unpriced: number; ready: boolean; onSaved: () => Promise<void> }) {
   const [error, setError] = useState("");
   const act = async (fn: () => Promise<unknown>) => {
     setError("");
@@ -239,10 +314,20 @@ function ManagerPanel({ request, unpriced, onSaved }: { request: ProcRequest; un
         <label className="block">
           <span className="label">Status</span>
           <select className="input w-40" value={request.status}
-            onChange={(e) => act(() => updateRequest(request.id, { status: e.target.value as RequestStatus }))}>
+            onChange={(e) => {
+              const status = e.target.value as RequestStatus;
+              // Approving goes through approve_request so the BOM gets confirmed.
+              act(() => (status === "approved" ? approveRequest(request.id) : updateRequest(request.id, { status })));
+            }}>
             {STATUSES.map((s) => <option key={s} value={s} className="capitalize">{s}</option>)}
           </select>
         </label>
+        {request.status === "submitted" && (
+          <button className="btn btn-primary" disabled={!ready || unpriced > 0} onClick={() => act(() => approveRequest(request.id))}
+            title={!ready ? "Some lines still need attention" : unpriced > 0 ? "Price every line first" : "Confirm this BOM"}>
+            Approve
+          </button>
+        )}
         <div>
           <span className="label">REQ number</span>
           {request.req_number ? (

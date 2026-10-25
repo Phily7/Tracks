@@ -10,7 +10,7 @@ import { STATUSES, usd, type ProcRequest, type Profile, type RequestStatus } fro
 
 type Summary = ProcRequest & {
   owner_name: string | null; owner_email: string; line_count: number; est_total_usd: number;
-  has_air_restricted: boolean | null; issues: string[]; unpriced_count: number;
+  has_air_restricted: boolean | null; issues: string[]; unpriced_count: number; pending_changes: number;
 };
 
 const URGENCY_RANK: Record<string, number> = { "Blocking work right now": 0, "Blocking within 2 weeks": 1, Normal: 2 };
@@ -36,7 +36,8 @@ export default function ManagerPage() {
   if (loading) return <AppShell me={me}><p className="hint">Loading…</p></AppShell>;
   if (me?.role !== "manager") return <AppShell me={me}><p>This page is for managers. <Link href="/requests" className="text-accent-text">Go to my requests</Link></p></AppShell>;
 
-  const submitted = rows.filter((r) => r.status === "submitted");
+  // New submissions plus approved requests whose changes need a look.
+  const submitted = rows.filter((r) => r.status === "submitted" || r.pending_changes > 0);
   const byProject = Object.entries(
     rows.filter((r) => r.status !== "draft" && r.status !== "rejected")
       .reduce<Record<string, number>>((m, r) => ({ ...m, [r.project ?? "—"]: (m[r.project ?? "—"] ?? 0) + Number(r.est_total_usd) }), {}),
@@ -84,7 +85,7 @@ export default function ManagerPage() {
                     <td className={r.urgency?.startsWith("Blocking") ? "font-medium text-bad" : ""}>{r.urgency ?? "—"}</td>
                     <td className="tabular-nums">{r.needed_by ?? "—"}</td>
                     <td className="text-right tabular-nums">{usd(Number(r.est_total_usd))}</td>
-                    <td><StatusChip status={r.status} ready={r.issues.length === 0} /></td>
+                    <td><StatusChip status={r.status} ready={r.issues.length === 0} pending={r.pending_changes} /></td>
                   </tr>
                 ))}
               </tbody>
