@@ -46,17 +46,17 @@ export function LineItemsTable({ items, editable, tracking = false, onSaved }: P
       </div>
       {error && <p className="mb-2 rounded-md bg-bad-soft px-3 py-2 text-sm text-bad" role="alert">{error}</p>}
       <div className="card overflow-x-auto">
-        <table className="tbl min-w-[1100px]">
+        <table className="tbl min-w-[1280px]">
           <thead>
             <tr>
               <th className="w-8">#</th>
               <th className="min-w-44">Item name</th>
-              <th className="w-20">Qty</th>
-              <th className="w-24">Unit</th>
+              <th className="w-20 min-w-20">Qty</th>
+              <th className="w-24 min-w-24">Unit</th>
               <th className="min-w-72">Detailed specification</th>
               <th className="min-w-40">Datasheet / link</th>
               <th className="w-32">Air freight</th>
-              <th className="w-24">Unit USD</th>
+              <th className="w-24 min-w-24">Unit USD</th>
               <th className="w-24 text-right">Line total</th>
               <th className="min-w-32">Vendor</th>
               <th className="min-w-32">Notes</th>

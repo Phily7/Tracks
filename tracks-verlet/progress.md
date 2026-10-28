@@ -53,8 +53,11 @@ The confirmed BOM is shown separately and is what the .xlsx exports. Migration 0
 Checked in a rolled-back SQL scenario as the real users (direct approve blocked; approve → pending 0; engineer edits →
 pending 4; hard-delete of a confirmed line deletes nothing; snapshot not writable; engineer can't approve; discard restores;
 approving changes merges and drops removed lines). In Chrome: a submitted request now opens editable for its engineer.
-**Not clicked through in the UI yet:** the approved-request view (highlights, banner, Approve/Discard), which needs an
-approved request and the manager session.
+UI click-through (2026-10-28) as the engineer on "a1 ads1299 dropin priced": approved view, Changed/Removed
+highlights with old values, banner, Discard (restores), then edits again + manager approval (done in SQL as the manager,
+because Claude can't type the manager password): confirmed qty 16→20, removed line gone, 42 lines, 0 pending.
+That request is now **approved** in the live data. Fixed narrow Qty/Unit columns.
+The manager's own **Approve changes** button hasn't been clicked in the UI (needs the manager login).
 
 ## Next steps
 
@@ -64,7 +67,7 @@ approved request and the manager session.
    so emails also carry a typed code
 4. Later: switch SMTP to a Verlet address (Resend + `verlet.co` DNS via Verlet IT); Supabase settings only, no code
 5. When testing ends: remove `@gmail.com` from the allowlist; consider limiting delete-request / allowlist / projects edits to the owner
-6. Merge or push the `tracks-verlet` branch when the user wants
+6. Branch `tracks-verlet` is pushed to GitHub (Phily7/Tracks) over SSH; HTTPS pushes reset from this machine. Merge when ready
 
 ## Open issues / decisions
 
