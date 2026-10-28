@@ -1,11 +1,11 @@
 # Progress — Tracks Verlet
 
-_Last updated: 2026-10-24_
+_Last updated: 2026-10-28_
 
 ## Where things stand
 
 **Live and ready for a first round of testing.** https://tracks-verlet.vercel.app
-Migrations 0001–0005 applied to Supabase `qnvjidujwwpoqdpqwlsb`. Builds clean. Committed on branch `tracks-verlet`
+Migrations 0001–0005 applied (0006 written, not applied) to Supabase `qnvjidujwwpoqdpqwlsb`. Builds clean. Committed on branch `tracks-verlet`
 of the parent `Tracks` repo (not merged to `main`, not pushed).
 
 ## Done ✅
@@ -44,6 +44,23 @@ Verified: email delivered, link redirects to `/auth/callback` with the session.
 - Team panel: Make manager / Make engineer (`set_role`, 0004), owner protection (0005).
 - Verlet theme (DM Sans / DM Serif Display, pink #d64d7a, Verlet mark) + system dark mode.
 - Security advisor fixes (0002).
+
+## ⚠️ Resume here: change tracking is built but not live
+
+Commit `aa2fde1`: engineers and managers can edit requests at every stage. After approval, edits are pending
+changes (New / Changed / Removed, old values crossed out) until a manager approves them (`approve_request`) or
+someone discards them (`discard_changes`). The confirmed BOM is shown separately and is what the .xlsx exports.
+
+**Not applied / not deployed.** `supabase/migrations/0006_change_tracking.sql` failed twice through the Supabase MCP
+(`apply_migration` → "Invalid or expired requestState"; nothing was applied). Steps:
+1. User reconnects the Supabase MCP (`/mcp` → supabase → authenticate)
+2. Apply 0006 (the file is the source of truth). Check: `approved`/`removed` on line_items,
+   `approved_snapshot`/`approved_at` on requests, `request_summaries.pending_changes`, `approve_request`, `discard_changes`
+3. Rolled-back SQL scenario as the real users: engineer edits an approved request → pending count; discard restores;
+   approve merges and deletes removed lines; engineer can't call approve_request or write `approved`; direct
+   status→approved is refused. Look up user ids **before** `set local role authenticated`
+4. `get_advisors` (security), then `vercel --prod`, then check the request page in Chrome
+5. Don't deploy before 0006: the app's Approve now calls `approve_request`, which doesn't exist until then
 
 ## Next steps
 

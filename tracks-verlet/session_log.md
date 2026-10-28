@@ -59,3 +59,20 @@ Supabase for the database, Vercel for the demo.
 - Supabase email templates are locked until custom SMTP is on.
 - Sequences don't roll back: reset `req_number_seq` after transactional tests.
 - In SQL role tests, look up ids before `set local role authenticated` (RLS hides other profiles).
+
+## 2026-10-25 → 28: Session 3: editing after submit/approval
+
+**Ask:** engineers and managers can both edit requests (clarifications, evolving projects). After approval, changes
+must be highlighted, and once approved they join the confirmed BOM.
+
+**Built (commit `aa2fde1`, not deployed)**
+- 0006: `line_items.approved` (confirmed snapshot) + `removed`; `requests.approved_snapshot` + `approved_at`;
+  `line_fields` / `header_fields`; `pending_changes`; `approve_request` / `discard_changes`; owners edit at any stage;
+  confirmed lines can't be deleted directly; column grants stop clients writing snapshots; status→approved only via
+  `approve_request` (`tracks.approving` flag); rejected → resubmit; checks ignore removed lines.
+- UI: New/Changed/Removed rows with crossed-out old values and Undo; changes banner with Approve/Discard;
+  collapsible Confirmed BOM; header field diffs; confirmed .xlsx export; "N changes pending" chips; Waiting-for-review
+  counts pending changes.
+
+**Blocked:** Supabase MCP `apply_migration` returned "Invalid or expired requestState" twice; `execute_sql` still worked.
+Needs re-auth.
